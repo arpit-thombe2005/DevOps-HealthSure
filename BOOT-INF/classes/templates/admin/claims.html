@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security"
+      th:replace="~{fragments/layout :: layout('All Claims Oversight', ~{::content})}">
+<body>
+<div th:fragment="content">
+  <!-- Page Header -->
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+      <h1 class="page-title">All Claims Oversight</h1>
+      <p class="text-muted">Global administrative view of all claims submitted across the platform.</p>
+    </div>
+  </div>
+
+  <!-- Claims Table Card -->
+  <div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+      <h2 class="card-title"><i class="bi bi-folder2-open"></i> System-Wide Claims (<span th:text="${claims.totalElements}">0</span>)</h2>
+    </div>
+    <div class="table-responsive">
+      <table class="table">
+        <thead>
+          <tr>
+            <th>Claim Ref</th>
+            <th>Policyholder</th>
+            <th>Policy #</th>
+            <th>Claim Type</th>
+            <th>Amount</th>
+            <th>Approved Amount</th>
+            <th>Status</th>
+            <th>Submission Date</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr th:each="c : ${claims.content}">
+            <td class="fw-bold font-monospace">
+              <a th:href="@{/claims/{id}(id=${c.id})}" th:text="${c.claimReference}">CLM-1001</a>
+            </td>
+            <td th:text="${c.submittedBy != null ? (c.submittedBy.firstName + ' ' + c.submittedBy.lastName) : 'N/A'}">John Doe</td>
+            <td class="font-monospace text-muted" th:text="${c.policy != null ? c.policy.policyNumber : 'N/A'}">POL-1001</td>
+            <td><span class="badge badge-neutral" th:text="${c.claimType}">HOSPITALIZATION</span></td>
+            <td class="fw-bold" th:text="${'$' + #numbers.formatDecimal(c.claimedAmount, 1, 2)}">$1,200.00</td>
+            <td th:text="${c.approvedAmount != null ? ('$' + #numbers.formatDecimal(c.approvedAmount, 1, 2)) : '-'}">-</td>
+            <td>
+              <span class="badge"
+                    th:classappend="${c.status.name() == 'APPROVED' ? 'badge-success' : (c.status.name() == 'REJECTED' ? 'badge-danger' : (c.status.name() == 'UNDER_REVIEW' ? 'badge-warning' : (c.status.name() == 'ADDITIONAL_INFO_REQUIRED' ? 'badge-info' : 'badge-neutral')))}"
+                    th:text="${c.status}">SUBMITTED</span>
+            </td>
+            <td th:text="${c.submissionDate != null ? #temporals.format(c.submissionDate, 'yyyy-MM-dd HH:mm') : #temporals.format(c.createdAt, 'yyyy-MM-dd HH:mm')}">2026-01-01</td>
+            <td>
+              <a th:href="@{/claims/{id}(id=${c.id})}" class="btn btn-sm btn-outline-primary">
+                <i class="bi bi-eye"></i> View Audit & Details
+              </a>
+            </td>
+          </tr>
+          <tr th:if="${#lists.isEmpty(claims.content)}">
+            <td colspan="9" class="text-center py-4 text-muted">No claims have been submitted yet.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Pagination -->
+    <div class="card-footer d-flex justify-content-between align-items-center" th:if="${claims.totalPages > 1}">
+      <span class="small text-muted" th:text="'Page ' + (${claims.number} + 1) + ' of ' + ${claims.totalPages}">Page 1 of 1</span>
+      <div>
+        <a th:if="${claims.hasPrevious()}" th:href="@{/admin/claims(page=${claims.number - 1})}" class="btn btn-sm btn-outline-primary me-1">Previous</a>
+        <a th:if="${claims.hasNext()}" th:href="@{/admin/claims(page=${claims.number + 1})}" class="btn btn-sm btn-outline-primary">Next</a>
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

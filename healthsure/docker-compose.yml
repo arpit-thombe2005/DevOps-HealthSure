@@ -1,0 +1,69 @@
+version: '3.8'
+
+services:
+  mysql:
+    image: mysql:8.0.36
+    container_name: healthsure-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: healthsure
+      MYSQL_USER: healthsure
+      MYSQL_PASSWORD: healthsure_pwd
+      MYSQL_ROOT_PASSWORD: root_pwd
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    networks:
+      - healthsure-net
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "healthsure", "-phealthsure_pwd"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: healthsure:latest
+    container_name: healthsure-app
+    restart: unless-stopped
+    ports:
+      - "8081:8080"
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      DB_HOST: mysql
+      DB_PORT: 3306
+      DB_NAME: healthsure
+      DB_USERNAME: healthsure
+      DB_PASSWORD: healthsure_pwd
+      SERVER_PORT: 8080
+      UPLOAD_DIR: /app/uploads
+      SEED_DATA_ENABLED: "true"
+      JAVA_OPTS: "-XX:+UseG1GC -XX:MaxRAMPercentage=75.0"
+    volumes:
+      - app_uploads:/app/uploads
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks:
+      - healthsure-net
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8080/actuator/health || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 40s
+
+volumes:
+  mysql_data:
+    name: healthsure_mysql_data
+  app_uploads:
+    name: healthsure_app_uploads
+
+networks:
+  healthsure-net:
+    name: healthsure_network
+    driver: bridge

@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{fragments/layout :: layout('Reviewer Dashboard', ~{::content})}">
+<body>
+<div th:fragment="content">
+  <div class="grid-4 mb-4">
+    <div class="stat-card">
+      <div class="stat-icon yellow"><i class="fas fa-inbox"></i></div>
+      <div class="stat-content">
+        <div class="stat-value" th:text="${stats.submittedClaims}">0</div>
+        <div class="stat-label">Awaiting Review</div>
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon blue"><i class="fas fa-search"></i></div>
+      <div class="stat-content">
+        <div class="stat-value" th:text="${stats.underReviewClaims}">0</div>
+        <div class="stat-label">Under Review</div>
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon green"><i class="fas fa-check-circle"></i></div>
+      <div class="stat-content">
+        <div class="stat-value" th:text="${stats.approvedClaims}">0</div>
+        <div class="stat-label">Approved</div>
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon red"><i class="fas fa-times-circle"></i></div>
+      <div class="stat-content">
+        <div class="stat-value" th:text="${stats.rejectedClaims}">0</div>
+        <div class="stat-label">Rejected</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header">
+      <h2 class="card-title">Recent Claims</h2>
+      <a th:href="@{/reviewer/queue}" class="btn btn-primary btn-sm">View Full Queue</a>
+    </div>
+    <div class="table-container">
+      <table class="data-table" aria-label="Recent claims">
+        <thead>
+        <tr>
+          <th>Reference</th>
+          <th>Policyholder</th>
+          <th>Type</th>
+          <th>Amount</th>
+          <th>Status</th>
+          <th>Submitted</th>
+          <th>Action</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr th:each="claim : ${recentClaims}">
+          <td><a th:href="@{/reviewer/claims/{id}(id=${claim.id})}"
+                 style="font-weight:600;" th:text="${claim.claimReference}"></a></td>
+          <td th:text="${claim.submittedBy.fullName}"></td>
+          <td th:text="${claim.claimType.name().replace('_',' ')}"></td>
+          <td>₹<span th:text="${#numbers.formatDecimal(claim.claimedAmount,0,'COMMA',2,'POINT')}"></span></td>
+          <td><span th:class="${'badge badge-' + claim.status.name().toLowerCase().replace('_','-')}"
+                    th:text="${claim.status.name().replace('_',' ')}"></span></td>
+          <td><span style="font-size:0.8rem;color:var(--neutral-500);"
+                    th:text="${claim.submittedAt != null ? #temporals.format(claim.submittedAt,'dd MMM yy') : '-'}"></span></td>
+          <td>
+            <a th:href="@{/reviewer/claims/{id}(id=${claim.id})}"
+               class="btn btn-outline-primary btn-sm">Review</a>
+          </td>
+        </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+</body>
+</html>

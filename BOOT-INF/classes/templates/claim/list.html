@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security"
+      th:replace="~{fragments/layout :: layout('My Claims', ~{::content})}">
+<body>
+<div th:fragment="content">
+  <!-- Stats Row -->
+  <div class="grid-4 mb-4">
+    <div class="stat-card">
+      <div class="stat-icon blue"><i class="fas fa-file-medical"></i></div>
+      <div class="stat-content">
+        <div class="stat-value" th:text="${stats.myTotalClaims ?: stats.totalClaims}">0</div>
+        <div class="stat-label">Total Claims</div>
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon yellow"><i class="fas fa-clock"></i></div>
+      <div class="stat-content">
+        <div class="stat-value" th:text="${stats.myActiveClaims ?: (stats.submittedClaims + stats.underReviewClaims)}">0</div>
+        <div class="stat-label">Active / Pending</div>
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon green"><i class="fas fa-check-circle"></i></div>
+      <div class="stat-content">
+        <div class="stat-value" th:text="${stats.myApprovedClaims ?: stats.approvedClaims}">0</div>
+        <div class="stat-label">Approved</div>
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon red"><i class="fas fa-times-circle"></i></div>
+      <div class="stat-content">
+        <div class="stat-value" th:text="${stats.rejectedClaims}">0</div>
+        <div class="stat-label">Rejected</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Claims Table -->
+  <div class="card">
+    <div class="card-header">
+      <h2 class="card-title" th:text="${pageTitle ?: 'My Claims'}">Claims</h2>
+      <div class="d-flex gap-2">
+        <a th:href="@{/claims/new}" class="btn btn-primary btn-sm"
+           sec:authorize="hasRole('POLICYHOLDER') and !hasRole('ADMIN')">
+          <i class="fas fa-plus"></i> New Claim
+        </a>
+      </div>
+    </div>
+    <div class="table-container">
+      <div th:if="${claims.totalElements == 0}" class="empty-state">
+        <div class="empty-icon"><i class="fas fa-folder-open"></i></div>
+        <h3>No claims found</h3>
+        <p sec:authorize="hasRole('POLICYHOLDER') and !hasRole('ADMIN')">
+          Ready to submit your first claim?
+          <a th:href="@{/claims/new}">Click here</a>
+        </p>
+        <p sec:authorize="hasAnyRole('REVIEWER','ADMIN')">No claims in the queue.</p>
+      </div>
+      <table class="data-table" th:if="${claims.totalElements > 0}" aria-label="Claims list">
+        <thead>
+        <tr>
+          <th scope="col">Reference</th>
+          <th scope="col">Policy</th>
+          <th scope="col">Type</th>
+          <th scope="col">Hospital</th>
+          <th scope="col">Amount</th>
+          <th scope="col">Status</th>
+          <th scope="col">Submitted</th>
+          <th scope="col">Actions</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr th:each="claim : ${claims.content}">
+          <td>
+            <a th:href="@{/claims/{id}(id=${claim.id})}"
+               style="font-weight:600;color:var(--primary);"
+               th:text="${claim.claimReference}">CLM-XXXX</a>
+          </td>
+          <td th:text="${claim.policy.policyNumber}">POL-XXX</td>
+          <td>
+            <span style="font-size:0.8rem;" th:text="${claim.claimType.name().replace('_',' ')}">Type</span>
+          </td>
+          <td class="truncate" style="max-width:150px;" th:text="${claim.hospitalName}">Hospital</td>
+          <td>
+            <span style="font-weight:600;">
+              ₹<span th:text="${#numbers.formatDecimal(claim.claimedAmount, 0, 'COMMA', 2, 'POINT')}">0.00</span>
+            </span>
+          </td>
+          <td>
+            <span th:class="${'badge badge-' + claim.status.name().toLowerCase().replace('_','-')}"
+                  th:text="${claim.status.name().replace('_',' ')}">DRAFT</span>
+          </td>
+          <td>
+            <span style="font-size:0.8rem;color:var(--neutral-500);"
+                  th:text="${claim.submittedAt != null ? #temporals.format(claim.submittedAt, 'dd MMM yyyy') : 'Not submitted'}">
+            </span>
+          </td>
+          <td>
+            <a th:href="@{/claims/{id}(id=${claim.id})}" class="btn btn-outline-secondary btn-sm">
+              <i class="fas fa-eye"></i> View
+            </a>
+            <a th:if="${claim.status.name() == 'UNDER_REVIEW'}"
+               th:href="@{/reviewer/claims/{id}(id=${claim.id})}"
+               class="btn btn-outline-primary btn-sm"
+               sec:authorize="hasAnyRole('REVIEWER','ADMIN')">
+              <i class="fas fa-gavel"></i> Review
+            </a>
+          </td>
+        </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Pagination -->
+    <div class="pagination-bar" th:if="${totalPages > 1}">
+      <span style="color:var(--neutral-500);">
+        Page <span th:text="${currentPage + 1}">1</span> of <span th:text="${totalPages}">1</span>
+      </span>
+      <div class="pagination">
+        <a th:if="${currentPage > 0}"
+           th:href="@{/claims(page=${currentPage - 1})}" class="page-link">‹ Prev</a>
+        <th:block th:each="i : ${#numbers.sequence(0, totalPages - 1)}">
+          <a th:href="@{/claims(page=${i})}"
+             th:class="${i == currentPage ? 'page-link active' : 'page-link'}"
+             th:text="${i + 1}">1</a>
+        </th:block>
+        <a th:if="${currentPage < totalPages - 1}"
+           th:href="@{/claims(page=${currentPage + 1})}" class="page-link">Next ›</a>
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

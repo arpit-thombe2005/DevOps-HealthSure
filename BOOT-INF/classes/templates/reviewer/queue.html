@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{fragments/layout :: layout('Review Queue', ~{::content})}">
+<body>
+<div th:fragment="content">
+  <div class="card">
+    <div class="card-header">
+      <h2 class="card-title"><i class="fas fa-tasks me-2"></i>Review Queue</h2>
+      <span style="font-size:0.813rem;color:var(--neutral-500);"
+            th:text="${claims.totalElements + ' claim(s) pending'}"></span>
+    </div>
+    <div class="table-container">
+      <div th:if="${claims.totalElements == 0}" class="empty-state">
+        <div class="empty-icon"><i class="fas fa-clipboard-check"></i></div>
+        <h3>Queue is clear!</h3>
+        <p>No claims awaiting review at this time.</p>
+      </div>
+      <table class="data-table" th:if="${claims.totalElements > 0}" aria-label="Claim review queue">
+        <thead>
+        <tr>
+          <th>Reference</th>
+          <th>Policyholder</th>
+          <th>Type</th>
+          <th>Hospital</th>
+          <th>Amount</th>
+          <th>Status</th>
+          <th>Submitted</th>
+          <th>Action</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr th:each="claim : ${claims.content}">
+          <td><a th:href="@{/reviewer/claims/{id}(id=${claim.id})}"
+                 style="font-weight:600;color:var(--primary);"
+                 th:text="${claim.claimReference}"></a></td>
+          <td>
+            <div style="font-weight:500;" th:text="${claim.submittedBy.fullName}"></div>
+            <div style="font-size:0.75rem;color:var(--neutral-400);" th:text="${claim.submittedBy.username}"></div>
+          </td>
+          <td th:text="${claim.claimType.name().replace('_',' ')}"></td>
+          <td class="truncate" style="max-width:120px;" th:text="${claim.hospitalName}"></td>
+          <td style="font-weight:600;">₹<span th:text="${#numbers.formatDecimal(claim.claimedAmount,0,'COMMA',2,'POINT')}"></span></td>
+          <td><span th:class="${'badge badge-' + claim.status.name().toLowerCase().replace('_','-')}"
+                    th:text="${claim.status.name().replace('_',' ')}"></span></td>
+          <td style="font-size:0.8rem;color:var(--neutral-500);"
+              th:text="${claim.submittedAt != null ? #temporals.format(claim.submittedAt,'dd MMM yyyy') : '-'}"></td>
+          <td>
+            <a th:href="@{/reviewer/claims/{id}(id=${claim.id})}"
+               class="btn btn-primary btn-sm">
+              <i class="fas fa-gavel"></i> Review
+            </a>
+          </td>
+        </tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="pagination-bar" th:if="${totalPages > 1}">
+      <span>Page <span th:text="${currentPage + 1}"></span> of <span th:text="${totalPages}"></span></span>
+      <div class="pagination">
+        <a th:if="${currentPage > 0}" th:href="@{/reviewer/queue(page=${currentPage-1})}" class="page-link">‹</a>
+        <a th:if="${currentPage < totalPages-1}" th:href="@{/reviewer/queue(page=${currentPage+1})}" class="page-link">›</a>
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

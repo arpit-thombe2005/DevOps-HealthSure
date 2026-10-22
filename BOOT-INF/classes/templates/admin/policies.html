@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security"
+      th:replace="~{fragments/layout :: layout('Policy Management', ~{::content})}">
+<body>
+<div th:fragment="content">
+  <!-- Page Header -->
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+      <h1 class="page-title">Insurance Policy Management</h1>
+      <p class="text-muted">Issue, configure, and monitor policy coverage terms and limits.</p>
+    </div>
+    <button class="btn btn-primary" onclick="document.getElementById('createPolicyCard').scrollIntoView({behavior: 'smooth'})">
+      <i class="bi bi-shield-plus"></i> Issue New Policy
+    </button>
+  </div>
+
+  <!-- Policies Table Card -->
+  <div class="card mb-4">
+    <div class="card-header d-flex justify-content-between align-items-center">
+      <h2 class="card-title"><i class="bi bi-shield-check"></i> All Policies (<span th:text="${policies.totalElements}">0</span>)</h2>
+    </div>
+    <div class="table-responsive">
+      <table class="table table-hover align-middle mb-0">
+        <thead>
+          <tr>
+            <th>Policy #</th>
+            <th>Policyholder</th>
+            <th>Type</th>
+            <th>Max Coverage</th>
+            <th>Used Amount</th>
+            <th>Remaining Balance</th>
+            <th>Valid Period</th>
+            <th>Status</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr th:each="p : ${policies.content}">
+            <td class="fw-bold font-monospace" th:text="${p.policyNumber}">POL-1001</td>
+            <td th:text="${p.policyholder != null ? (p.policyholder.firstName + ' ' + p.policyholder.lastName + ' (' + p.policyholder.username + ')') : 'N/A'}">John Doe</td>
+            <td><span class="badge badge-neutral" th:text="${p.policyType}">COMPREHENSIVE</span></td>
+            <td class="fw-bold" th:text="${'$' + #numbers.formatDecimal(p.coverageAmount, 1, 2)}">$50,000.00</td>
+            <td class="text-danger" th:text="${'$' + #numbers.formatDecimal(p.usedCoverage != null ? p.usedCoverage : 0, 1, 2)}">$0.00</td>
+            <td class="text-success fw-bold" th:text="${'$' + #numbers.formatDecimal(p.availableCoverage, 1, 2)}">$50,000.00</td>
+            <td>
+              <small class="text-muted d-block" th:text="${p.startDate + ' to ' + p.expiryDate}">2026-01-01 to 2027-01-01</small>
+            </td>
+            <td>
+              <span class="badge"
+                    th:classappend="${p.status.name() == 'ACTIVE' ? 'badge-success' : (p.status.name() == 'EXPIRED' ? 'badge-warning' : 'badge-danger')}"
+                    th:text="${p.status}">ACTIVE</span>
+            </td>
+            <td>
+              <form th:if="${p.status.name() == 'ACTIVE'}" th:action="@{/admin/policies/{id}/cancel(id=${p.id})}" method="post" style="display:inline;">
+                <button type="submit" class="btn btn-sm btn-outline-danger" onclick="return confirm('Are you sure you want to cancel this policy?');">
+                  Cancel
+                </button>
+              </form>
+              <span th:unless="${p.status.name() == 'ACTIVE'}" class="text-muted small">No action</span>
+            </td>
+          </tr>
+          <tr th:if="${#lists.isEmpty(policies.content)}">
+            <td colspan="9" class="text-center py-4 text-muted">No policies found. Issue one below.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Pagination -->
+    <div class="card-footer d-flex justify-content-between align-items-center" th:if="${policies.totalPages > 1}">
+      <span class="small text-muted" th:text="'Page ' + (${policies.number} + 1) + ' of ' + ${policies.totalPages}">Page 1 of 1</span>
+      <div>
+        <a th:if="${policies.hasPrevious()}" th:href="@{/admin/policies(page=${policies.number - 1})}" class="btn btn-sm btn-outline-primary me-1">Previous</a>
+        <a th:if="${policies.hasNext()}" th:href="@{/admin/policies(page=${policies.number + 1})}" class="btn btn-sm btn-outline-primary">Next</a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Issue New Policy Form -->
+  <div class="card" id="createPolicyCard">
+    <div class="card-header">
+      <h2 class="card-title"><i class="bi bi-file-earmark-medical"></i> Issue Insurance Policy</h2>
+    </div>
+    <div class="card-body">
+      <form th:action="@{/admin/policies/create}" method="post">
+        <div class="row g-3">
+          <div class="col-md-6">
+            <label class="form-label" for="userId">Policyholder *</label>
+            <select id="userId" name="userId" class="form-select" required>
+              <option value="">-- Select Policyholder --</option>
+              <option th:each="u : ${users}" th:value="${u.id}" th:text="${u.firstName + ' ' + u.lastName + ' (@' + u.username + ') - ' + u.email}">
+                John Doe (@user1)
+              </option>
+            </select>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label" for="policyType">Policy Plan Type *</label>
+            <select id="policyType" name="policyType" class="form-select" required>
+              <option th:each="pt : ${policyTypes}" th:value="${pt.name()}" th:text="${pt.name()}">COMPREHENSIVE</option>
+            </select>
+          </div>
+          <div class="col-md-4">
+            <label class="form-label" for="coverageAmount">Coverage Limit Amount ($) *</label>
+            <input type="number" id="coverageAmount" name="coverageAmount" step="100.00" min="500" value="25000.00" class="form-control" required/>
+          </div>
+          <div class="col-md-4">
+            <label class="form-label" for="startDate">Policy Effective Start Date *</label>
+            <input type="date" id="startDate" name="startDate" class="form-control" required/>
+          </div>
+          <div class="col-md-4">
+            <label class="form-label" for="expiryDate">Policy Expiration Date *</label>
+            <input type="date" id="expiryDate" name="expiryDate" class="form-control" required/>
+          </div>
+          <div class="col-12">
+            <label class="form-label" for="description">Policy Terms & Coverage Notes</label>
+            <textarea id="description" name="description" class="form-control" rows="2" placeholder="Standard hospitalization and outpatient care coverage details..."></textarea>
+          </div>
+          <div class="col-12 text-end mt-3">
+            <button type="submit" class="btn btn-primary">
+              <i class="bi bi-shield-check"></i> Issue Policy
+            </button>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+</body>
+</html>

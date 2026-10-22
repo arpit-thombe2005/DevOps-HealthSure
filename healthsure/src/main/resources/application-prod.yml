@@ -1,0 +1,20 @@
+spring:
+  datasource:
+    url: jdbc:mysql://${DB_HOST:localhost}:${DB_PORT:3306}/${DB_NAME:healthsure}?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+    username: ${DB_USERNAME:healthsure}
+    password: ${DB_PASSWORD:healthsure_pwd}
+  jpa:
+    show-sql: false
+  thymeleaf:
+    cache: true
+  flyway:
+    enabled: true
+
+healthsure:
+  seed:
+    enabled: false
+
+logging:
+  level:
+    com.healthsure: INFO
+    root: WARN

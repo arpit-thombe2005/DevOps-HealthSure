@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{fragments/layout :: layout('Admin Dashboard', ~{::content})}">
+<body>
+<div th:fragment="content">
+  <!-- Stats Row -->
+  <div class="grid-4 mb-4">
+    <div class="stat-card">
+      <div class="stat-icon blue"><i class="fas fa-users"></i></div>
+      <div class="stat-content">
+        <div class="stat-value" th:text="${totalUsers}">0</div>
+        <div class="stat-label">Total Users</div>
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon green"><i class="fas fa-file-contract"></i></div>
+      <div class="stat-content">
+        <div class="stat-value" th:text="${activePolicies}">0</div>
+        <div class="stat-label">Active Policies</div>
+        <div class="stat-sub" th:text="${totalPolicies + ' total'}"></div>
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon yellow"><i class="fas fa-clock"></i></div>
+      <div class="stat-content">
+        <div class="stat-value" th:text="${stats.submittedClaims + stats.underReviewClaims}">0</div>
+        <div class="stat-label">Pending Review</div>
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon green"><i class="fas fa-check-circle"></i></div>
+      <div class="stat-content">
+        <div class="stat-value" th:text="${stats.approvedClaims}">0</div>
+        <div class="stat-label">Approved Claims</div>
+        <div class="stat-sub" th:if="${stats.totalApprovedAmount != null}"
+             th:text="'₹' + ${#numbers.formatDecimal(stats.totalApprovedAmount,0,'COMMA',0,'POINT')}"></div>
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon red"><i class="fas fa-times-circle"></i></div>
+      <div class="stat-content">
+        <div class="stat-value" th:text="${stats.rejectedClaims}">0</div>
+        <div class="stat-label">Rejected</div>
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon cyan"><i class="fas fa-question-circle"></i></div>
+      <div class="stat-content">
+        <div class="stat-value" th:text="${stats.additionalInfoRequiredClaims}">0</div>
+        <div class="stat-label">Additional Info Req.</div>
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon yellow"><i class="fas fa-exclamation-triangle"></i></div>
+      <div class="stat-content">
+        <div class="stat-value" th:text="${stats.validationFailedClaims}">0</div>
+        <div class="stat-label">Validation Failed</div>
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon blue"><i class="fas fa-file-medical"></i></div>
+      <div class="stat-content">
+        <div class="stat-value" th:text="${stats.totalClaims}">0</div>
+        <div class="stat-label">Total Claims</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Quick Links -->
+  <div class="grid-3 mb-4">
+    <a th:href="@{/admin/users}" class="card" style="padding:1.5rem;display:flex;gap:1rem;align-items:center;text-decoration:none;">
+      <div class="stat-icon blue"><i class="fas fa-users"></i></div>
+      <div>
+        <div style="font-weight:600;color:var(--neutral-800);">Manage Users</div>
+        <div class="fs-sm text-muted">Add, enable, or disable users</div>
+      </div>
+    </a>
+    <a th:href="@{/admin/policies}" class="card" style="padding:1.5rem;display:flex;gap:1rem;align-items:center;text-decoration:none;">
+      <div class="stat-icon green"><i class="fas fa-file-contract"></i></div>
+      <div>
+        <div style="font-weight:600;color:var(--neutral-800);">Manage Policies</div>
+        <div class="fs-sm text-muted">Create and cancel policies</div>
+      </div>
+    </a>
+    <a th:href="@{/admin/claims}" class="card" style="padding:1.5rem;display:flex;gap:1rem;align-items:center;text-decoration:none;">
+      <div class="stat-icon yellow"><i class="fas fa-folder-open"></i></div>
+      <div>
+        <div style="font-weight:600;color:var(--neutral-800);">All Claims</div>
+        <div class="fs-sm text-muted">View and administer claims</div>
+      </div>
+    </a>
+  </div>
+
+  <!-- Recent Activity -->
+  <div class="card">
+    <div class="card-header">
+      <h2 class="card-title">Recent Activity</h2>
+    </div>
+    <div class="table-container">
+      <table class="data-table" aria-label="Recent claims">
+        <thead>
+        <tr>
+          <th>Reference</th>
+          <th>Policyholder</th>
+          <th>Type</th>
+          <th>Amount</th>
+          <th>Status</th>
+          <th>Date</th>
+          <th>Action</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr th:each="claim : ${recentClaims}">
+          <td><a th:href="@{/claims/{id}(id=${claim.id})}"
+                 style="font-weight:600;color:var(--primary);"
+                 th:text="${claim.claimReference}"></a></td>
+          <td th:text="${claim.submittedBy.fullName}"></td>
+          <td th:text="${claim.claimType.name().replace('_',' ')}"></td>
+          <td>₹<span th:text="${#numbers.formatDecimal(claim.claimedAmount,0,'COMMA',2,'POINT')}"></span></td>
+          <td><span th:class="${'badge badge-' + claim.status.name().toLowerCase().replace('_','-')}"
+                    th:text="${claim.status.name().replace('_',' ')}"></span></td>
+          <td><span style="font-size:0.8rem;color:var(--neutral-500);"
+                    th:text="${#temporals.format(claim.createdAt,'dd MMM yyyy')}"></span></td>
+          <td><a th:href="@{/claims/{id}(id=${claim.id})}" class="btn btn-outline-secondary btn-sm">View</a></td>
+        </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+</body>
+</html>

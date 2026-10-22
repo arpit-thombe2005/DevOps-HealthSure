@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Register – HealthSure</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+  <link th:href="@{/css/app.css}" rel="stylesheet"/>
+  <style>
+    .auth-card { max-width: 560px; }
+    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+    @media(max-width:500px){ .form-row { grid-template-columns: 1fr; } }
+  </style>
+</head>
+<body>
+<div class="auth-page">
+  <div class="auth-card">
+    <div class="auth-logo">
+      <div class="logo-icon"><i class="fas fa-shield-heart"></i></div>
+      <h1>Create Account</h1>
+      <p>Join HealthSure and manage your insurance claims</p>
+    </div>
+
+    <div th:if="${error}" class="alert alert-danger" role="alert">
+      <i class="fas fa-exclamation-circle"></i> <span th:text="${error}"></span>
+    </div>
+
+    <form th:action="@{/register}" method="post" th:object="${registrationRequest}" data-validate>
+      <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label for="firstName" class="form-label">First Name *</label>
+          <input type="text" id="firstName" th:field="*{firstName}" class="form-control"
+                 th:classappend="${#fields.hasErrors('firstName')} ? 'is-invalid'"
+                 placeholder="First name" required/>
+          <div class="invalid-feedback" th:if="${#fields.hasErrors('firstName')}"
+               th:errors="*{firstName}"></div>
+        </div>
+        <div class="form-group">
+          <label for="lastName" class="form-label">Last Name *</label>
+          <input type="text" id="lastName" th:field="*{lastName}" class="form-control"
+                 th:classappend="${#fields.hasErrors('lastName')} ? 'is-invalid'"
+                 placeholder="Last name" required/>
+          <div class="invalid-feedback" th:if="${#fields.hasErrors('lastName')}"
+               th:errors="*{lastName}"></div>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="username" class="form-label">Username *</label>
+        <input type="text" id="username" th:field="*{username}" class="form-control"
+               th:classappend="${#fields.hasErrors('username')} ? 'is-invalid'"
+               placeholder="Choose a username (letters, numbers, underscore)" required/>
+        <div class="invalid-feedback" th:if="${#fields.hasErrors('username')}"
+             th:errors="*{username}"></div>
+      </div>
+
+      <div class="form-group">
+        <label for="email" class="form-label">Email Address *</label>
+        <input type="email" id="email" th:field="*{email}" class="form-control"
+               th:classappend="${#fields.hasErrors('email')} ? 'is-invalid'"
+               placeholder="you@example.com" required/>
+        <div class="invalid-feedback" th:if="${#fields.hasErrors('email')}"
+             th:errors="*{email}"></div>
+      </div>
+
+      <div class="form-group">
+        <label for="phone" class="form-label">Phone</label>
+        <input type="tel" id="phone" th:field="*{phone}" class="form-control"
+               placeholder="+91-9000000000"/>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label for="password" class="form-label">Password *</label>
+          <input type="password" id="password" th:field="*{password}" class="form-control"
+                 th:classappend="${#fields.hasErrors('password')} ? 'is-invalid'"
+                 placeholder="Min 8 characters" required/>
+          <div class="invalid-feedback" th:if="${#fields.hasErrors('password')}"
+               th:errors="*{password}"></div>
+        </div>
+        <div class="form-group">
+          <label for="confirmPassword" class="form-label">Confirm Password *</label>
+          <input type="password" id="confirmPassword" th:field="*{confirmPassword}" class="form-control"
+                 placeholder="Repeat password" required/>
+        </div>
+      </div>
+
+      <button type="submit" class="btn btn-primary w-100 btn-lg">
+        <i class="fas fa-user-plus"></i> Create Account
+      </button>
+    </form>
+
+    <div style="text-align:center;margin-top:1.5rem;">
+      <span style="color:var(--neutral-500);font-size:0.875rem;">Already have an account?</span>
+      <a th:href="@{/login}" style="font-size:0.875rem;margin-left:0.5rem;font-weight:600;">Sign in</a>
+    </div>
+  </div>
+</div>
+<script th:src="@{/js/app.js}"></script>
+</body>
+</html>

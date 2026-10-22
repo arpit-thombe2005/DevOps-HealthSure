@@ -1,0 +1,22 @@
+---
+# HealthSure Global Ansible Configuration Variables
+app_name: healthsure
+app_version: 1.0.0
+docker_image: "healthsure:latest"
+app_port: 8081
+container_port: 8080
+
+deploy_directory: /opt/healthsure
+uploads_directory: /opt/healthsure/uploads
+
+# Database Configuration (Use Ansible Vault in production)
+db_name: healthsure
+db_user: healthsure
+db_password: "healthsure_pwd_vault_encrypted"
+db_root_password: "root_pwd_vault_encrypted"
+db_port: 3306
+
+# Health check settings
+health_endpoint: "http://localhost:{{ app_port }}/actuator/health"
+health_check_retries: 12
+health_check_delay: 5

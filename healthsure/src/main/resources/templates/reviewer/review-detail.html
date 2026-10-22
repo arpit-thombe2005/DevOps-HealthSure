@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{fragments/layout :: layout('Review Claim', ~{::content})}">
+<body>
+<div th:fragment="content">
+  <div style="display:grid;grid-template-columns:3fr 2fr;gap:1.5rem;align-items:start;">
+
+    <!-- Claim Info -->
+    <div>
+      <div class="card mb-4">
+        <div class="card-header">
+          <div>
+            <h2 class="card-title" th:text="${claim.claimReference}">CLM-XXXX</h2>
+            <p style="margin:0;font-size:0.813rem;color:var(--neutral-500);">
+              Submitted by <strong th:text="${claim.submittedBy.fullName}"></strong>
+              on <span th:text="${claim.submittedAt != null ? #temporals.format(claim.submittedAt,'dd MMM yyyy HH:mm') : 'Not yet'}"></span>
+            </p>
+          </div>
+          <span th:class="${'badge badge-' + claim.status.name().toLowerCase().replace('_','-')}"
+                style="font-size:0.875rem;padding:0.375rem 0.875rem;"
+                th:text="${claim.status.name().replace('_',' ')}"></span>
+        </div>
+        <div class="card-body">
+          <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:1rem;margin-bottom:1.25rem;">
+            <div>
+              <div class="fs-xs text-muted fw-600" style="text-transform:uppercase;letter-spacing:.08em;margin-bottom:.25rem;">Policy</div>
+              <div class="fw-600" th:text="${claim.policy.policyNumber}"></div>
+              <div class="fs-xs text-muted" th:text="${claim.policy.policyType.name()}"></div>
+            </div>
+            <div>
+              <div class="fs-xs text-muted fw-600" style="text-transform:uppercase;letter-spacing:.08em;margin-bottom:.25rem;">Claim Type</div>
+              <div class="fw-600" th:text="${claim.claimType.name().replace('_',' ')}"></div>
+            </div>
+            <div>
+              <div class="fs-xs text-muted fw-600" style="text-transform:uppercase;letter-spacing:.08em;margin-bottom:.25rem;">Claimed Amount</div>
+              <div style="font-size:1.25rem;font-weight:700;color:var(--primary);">
+                ₹<span th:text="${#numbers.formatDecimal(claim.claimedAmount,0,'COMMA',2,'POINT')}"></span>
+              </div>
+              <div class="fs-xs text-muted">
+                Available coverage: ₹<span th:text="${#numbers.formatDecimal(claim.policy.availableCoverage,0,'COMMA',2,'POINT')}"></span>
+              </div>
+            </div>
+            <div>
+              <div class="fs-xs text-muted fw-600" style="text-transform:uppercase;letter-spacing:.08em;margin-bottom:.25rem;">Hospital</div>
+              <div th:text="${claim.hospitalName}"></div>
+            </div>
+            <div>
+              <div class="fs-xs text-muted fw-600" style="text-transform:uppercase;letter-spacing:.08em;margin-bottom:.25rem;">Doctor</div>
+              <div th:text="${claim.doctorName}"></div>
+            </div>
+            <div>
+              <div class="fs-xs text-muted fw-600" style="text-transform:uppercase;letter-spacing:.08em;margin-bottom:.25rem;">Treatment Period</div>
+              <div style="font-size:0.875rem;">
+                <span th:text="${#temporals.format(claim.treatmentStartDate,'dd MMM yyyy')}"></span>
+                <span th:if="${claim.treatmentEndDate != null}">
+                  — <span th:text="${#temporals.format(claim.treatmentEndDate,'dd MMM yyyy')}"></span>
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <div style="margin-bottom:1.25rem;">
+            <div class="fs-xs text-muted fw-600" style="text-transform:uppercase;letter-spacing:.08em;margin-bottom:.5rem;">Description</div>
+            <p style="font-size:0.875rem;line-height:1.7;color:var(--neutral-700);margin:0;" th:text="${claim.description}"></p>
+          </div>
+
+          <!-- Documents -->
+          <div>
+            <div class="fs-xs text-muted fw-600" style="text-transform:uppercase;letter-spacing:.08em;margin-bottom:.5rem;">Supporting Documents</div>
+            <div th:if="${#lists.isEmpty(documents)}"
+                 style="font-size:0.875rem;color:var(--neutral-400);">No documents uploaded.</div>
+            <div th:each="doc : ${documents}"
+                 style="display:flex;align-items:center;gap:.75rem;padding:.5rem;background:var(--neutral-50);border-radius:.375rem;margin-bottom:.5rem;">
+              <i class="fas fa-file" style="color:var(--primary);"></i>
+              <span style="flex:1;font-size:0.875rem;" th:text="${doc.originalFilename}"></span>
+              <a th:href="@{/documents/download/{d}/claim/{c}(d=${doc.id},c=${claim.id})}"
+                 class="btn btn-outline-secondary btn-sm" target="_blank">
+                <i class="fas fa-download"></i>
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Timeline -->
+      <div class="card">
+        <div class="card-header">
+          <h3 class="card-title"><i class="fas fa-history me-2"></i>Audit Timeline</h3>
+        </div>
+        <div class="card-body">
+          <div class="timeline">
+            <div class="timeline-item" th:each="e : ${auditEvents}">
+              <div th:class="${'timeline-dot ' + (e.eventType.name().contains('APPROVED')?'green':e.eventType.name().contains('REJECTED')?'red':e.eventType.name().contains('FAILED')?'yellow':'')}" ></div>
+              <div class="timeline-time" th:text="${#temporals.format(e.createdAt,'dd MMM yyyy HH:mm')}"></div>
+              <div class="timeline-event" th:text="${e.eventType.name().replace('_',' ')}"></div>
+              <div class="timeline-desc" th:text="${e.description}"></div>
+              <div style="font-size:.72rem;color:var(--neutral-400);" th:text="${'By: '+e.actorUsername}"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Decision Panel -->
+    <div th:if="${claim.status.name() == 'UNDER_REVIEW' or claim.status.name() == 'SUBMITTED'}">
+      <div class="card">
+        <div class="card-header">
+          <h3 class="card-title"><i class="fas fa-gavel me-2"></i>Record Decision</h3>
+        </div>
+        <div class="card-body">
+          <form th:action="@{/reviewer/claims/{id}/decide(id=${claim.id})}"
+                method="post" th:object="${decisionRequest}" id="decision-form">
+            <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+
+            <div class="form-group">
+              <label class="form-label">Decision *</label>
+              <div style="display:flex;flex-direction:column;gap:.625rem;">
+                <label class="decision-option decision-approved" onclick="setDecision('APPROVED', this)">
+                  <input type="radio" name="decision" value="APPROVED"/>
+                  <span class="decision-icon">
+                    <i class="fas fa-check"></i>
+                  </span>
+                  <span class="decision-text">Approve</span>
+                  <span class="decision-check-indicator"><i class="fas fa-check-circle"></i></span>
+                </label>
+                <label class="decision-option decision-rejected" onclick="setDecision('REJECTED', this)">
+                  <input type="radio" name="decision" value="REJECTED"/>
+                  <span class="decision-icon">
+                    <i class="fas fa-times"></i>
+                  </span>
+                  <span class="decision-text">Reject</span>
+                  <span class="decision-check-indicator"><i class="fas fa-check-circle"></i></span>
+                </label>
+                <label class="decision-option decision-info" onclick="setDecision('ADDITIONAL_INFO_REQUIRED', this)">
+                  <input type="radio" name="decision" value="ADDITIONAL_INFO_REQUIRED"/>
+                  <span class="decision-icon">
+                    <i class="fas fa-question"></i>
+                  </span>
+                  <span class="decision-text">Request More Info</span>
+                  <span class="decision-check-indicator"><i class="fas fa-check-circle"></i></span>
+                </label>
+              </div>
+            </div>
+
+            <div class="form-group" id="amount-field" style="display:none;">
+              <label for="recommendedAmount" class="form-label">Approved Amount (₹)</label>
+              <input type="number" id="recommendedAmount" th:field="*{recommendedAmount}"
+                     class="form-control" step="0.01" min="0" placeholder="Leave blank to approve full amount"/>
+            </div>
+
+            <div class="form-group" id="rejection-reason-field" style="display:none;">
+              <label for="decisionReason" class="form-label">Rejection Reason *</label>
+              <textarea id="decisionReason" th:field="*{decisionReason}" class="form-control form-textarea"
+                        rows="3" placeholder="Mandatory: Explain the reason for rejection" style="resize:vertical;"></textarea>
+            </div>
+
+            <div class="form-group" id="info-request-field" style="display:none;">
+              <label for="additionalInfoRequest" class="form-label">Information Required *</label>
+              <textarea id="additionalInfoRequest" th:field="*{additionalInfoRequest}" class="form-control form-textarea"
+                        rows="3" placeholder="Specify what additional information is needed" style="resize:vertical;"></textarea>
+            </div>
+
+            <div class="form-group">
+              <label for="notes" class="form-label">Review Notes</label>
+              <textarea id="notes" th:field="*{notes}" class="form-control form-textarea"
+                        rows="3" placeholder="Internal review notes" style="resize:vertical;"></textarea>
+            </div>
+
+            <button type="submit" class="btn btn-primary w-100" id="submit-decision"
+                    onclick="return validateDecision()">
+              <i class="fas fa-gavel"></i> Submit Decision
+            </button>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <!-- Already decided -->
+    <div th:if="${claim.status.name() != 'UNDER_REVIEW' and claim.status.name() != 'SUBMITTED'}">
+      <div class="card">
+        <div class="card-body" style="text-align:center;padding:2rem;">
+          <div style="font-size:2rem;margin-bottom:1rem;">
+            <i th:class="${claim.status.name()=='APPROVED'?'fas fa-check-circle text-success':claim.status.name()=='REJECTED'?'fas fa-times-circle text-danger':'fas fa-info-circle text-primary'}"></i>
+          </div>
+          <h3 style="font-size:1rem;margin-bottom:.5rem;" th:text="${'Claim is ' + claim.status.name().replace('_',' ')}"></h3>
+          <p style="font-size:.875rem;color:var(--neutral-500);">No further action required.</p>
+          <a th:href="@{/reviewer/queue}" class="btn btn-outline-secondary btn-sm">← Back to Queue</a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+  function setDecision(value, el) {
+    // Remove selected state from all options
+    document.querySelectorAll('.decision-option').forEach(o => {
+      o.classList.remove('selected');
+      const radio = o.querySelector('input[type="radio"]');
+      if (radio) radio.checked = false;
+    });
+
+    // Mark current clicked option as selected
+    if (el) {
+      el.classList.add('selected');
+      const targetRadio = el.querySelector('input[type="radio"]');
+      if (targetRadio) {
+        targetRadio.checked = true;
+      }
+    }
+
+    // Toggle conditional form fields
+    const amountField = document.getElementById('amount-field');
+    const rejectionField = document.getElementById('rejection-reason-field');
+    const infoField = document.getElementById('info-request-field');
+
+    if (amountField) amountField.style.display = (value === 'APPROVED') ? 'block' : 'none';
+    if (rejectionField) rejectionField.style.display = (value === 'REJECTED') ? 'block' : 'none';
+    if (infoField) infoField.style.display = (value === 'ADDITIONAL_INFO_REQUIRED') ? 'block' : 'none';
+  }
+
+  function validateDecision() {
+    const checkedRadio = document.querySelector('input[name="decision"]:checked');
+    if (!checkedRadio) {
+      alert('Please select a decision (Approve, Reject, or Request More Info) before submitting.');
+      return false;
+    }
+    const val = checkedRadio.value;
+    if (val === 'REJECTED') {
+      const reason = document.getElementById('decisionReason');
+      if (!reason || !reason.value.trim()) {
+        alert('Rejection reason is mandatory.');
+        if (reason) reason.focus();
+        return false;
+      }
+    }
+    if (val === 'ADDITIONAL_INFO_REQUIRED') {
+      const infoReq = document.getElementById('additionalInfoRequest');
+      if (!infoReq || !infoReq.value.trim()) {
+        alert('Please specify what additional information is needed.');
+        if (infoReq) infoReq.focus();
+        return false;
+      }
+    }
+    return true;
+  }
+  </script>
+</div>
+</body>
+</html>

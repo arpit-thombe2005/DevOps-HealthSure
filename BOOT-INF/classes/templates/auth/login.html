@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Sign In – HealthSure</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+  <link th:href="@{/css/app.css}" rel="stylesheet"/>
+</head>
+<body>
+<div class="auth-page">
+  <div class="auth-card">
+    <div class="auth-logo">
+      <div class="logo-icon"><i class="fas fa-shield-heart"></i></div>
+      <h1>HealthSure</h1>
+      <p>Health Insurance Claim Portal</p>
+    </div>
+
+    <div th:if="${loginError}" class="alert alert-danger" role="alert">
+      <i class="fas fa-exclamation-circle"></i>
+      <span th:text="${loginError}">Invalid credentials</span>
+    </div>
+    <div th:if="${logoutSuccess}" class="alert alert-success" role="alert">
+      <i class="fas fa-check-circle"></i>
+      <span th:text="${logoutSuccess}">Logged out</span>
+    </div>
+    <div th:if="${success}" class="alert alert-success" role="alert">
+      <i class="fas fa-check-circle"></i>
+      <span th:text="${success}">Success</span>
+    </div>
+
+    <form th:action="@{/login}" method="post" id="login-form" data-validate>
+      <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+
+      <div class="form-group">
+        <label for="username" class="form-label">Username or Email</label>
+        <input type="text" id="username" name="username" class="form-control"
+               placeholder="Enter username or email address" required autofocus autocomplete="username"
+               aria-label="Username or Email"/>
+      </div>
+
+      <div class="form-group">
+        <label for="password" class="form-label">Password</label>
+        <input type="password" id="password" name="password" class="form-control"
+               placeholder="Enter your password" required autocomplete="current-password"
+               aria-label="Password"/>
+      </div>
+
+      <button type="submit" class="btn btn-primary w-100 btn-lg" id="login-btn">
+        <i class="fas fa-sign-in-alt"></i> Sign In
+      </button>
+    </form>
+
+    <div style="text-align:center; margin-top:1.5rem;">
+      <span style="color:var(--neutral-500);font-size:0.875rem;">Don't have an account?</span>
+      <a th:href="@{/register}" style="font-size:0.875rem;margin-left:0.5rem;font-weight:600;">
+        Register here
+      </a>
+    </div>
+
+    <div style="margin-top:2rem;padding-top:1.5rem;border-top:1px solid var(--neutral-200);">
+      <p style="font-size:0.75rem;color:var(--neutral-400);text-align:center;margin-bottom:0.75rem;">
+        <strong>Demo Credentials</strong>
+      </p>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.5rem;font-size:0.75rem;">
+        <div style="background:var(--neutral-50);border:1px solid var(--neutral-200);border-radius:0.5rem;padding:0.5rem;">
+          <div style="font-weight:600;color:var(--neutral-700);">Admin</div>
+          <div style="color:var(--neutral-500);">admin / Admin@1234</div>
+        </div>
+        <div style="background:var(--neutral-50);border:1px solid var(--neutral-200);border-radius:0.5rem;padding:0.5rem;">
+          <div style="font-weight:600;color:var(--neutral-700);">Reviewer</div>
+          <div style="color:var(--neutral-500);">reviewer1 / Review@1234</div>
+        </div>
+        <div style="background:var(--neutral-50);border:1px solid var(--neutral-200);border-radius:0.5rem;padding:0.5rem;">
+          <div style="font-weight:600;color:var(--neutral-700);">Policyholder 1</div>
+          <div style="color:var(--neutral-500);">john.doe / User@1234</div>
+        </div>
+        <div style="background:var(--neutral-50);border:1px solid var(--neutral-200);border-radius:0.5rem;padding:0.5rem;">
+          <div style="font-weight:600;color:var(--neutral-700);">Policyholder 2</div>
+          <div style="color:var(--neutral-500);">jane.smith / User@1234</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script th:src="@{/js/app.js}"></script>
+</body>
+</html>

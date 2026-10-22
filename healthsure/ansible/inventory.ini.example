@@ -1,0 +1,13 @@
+# Ansible Inventory Configuration for HealthSure Deployment Target
+# Replace with target host IP/FQDN and SSH credentials
+
+[webservers]
+healthsure-prod-01 ansible_host=192.168.1.100 ansible_user=ubuntu ansible_ssh_private_key_file=~/.ssh/id_rsa
+
+[dbservers]
+healthsure-db-01 ansible_host=192.168.1.101 ansible_user=ubuntu ansible_ssh_private_key_file=~/.ssh/id_rsa
+
+[all:vars]
+ansible_python_interpreter=/usr/bin/python3
+ansible_ssh_common_args='-o StrictHostKeyChecking=no'
+app_environment=production

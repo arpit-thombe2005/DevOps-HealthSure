@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security"
+      th:replace="~{fragments/layout :: layout('Submit New Claim', ~{::content})}">
+<body>
+<div th:fragment="content">
+  <div style="max-width:820px;">
+    <div class="card">
+      <div class="card-header">
+        <h2 class="card-title"><i class="fas fa-file-medical me-2 text-primary"></i>Submit New Claim</h2>
+      </div>
+      <div class="card-body">
+
+        <div th:if="${#lists.isEmpty(policies)}" class="alert alert-warning">
+          <i class="fas fa-exclamation-triangle"></i>
+          You have no active policies. Please contact your administrator to get a policy assigned.
+        </div>
+
+        <form th:if="${!#lists.isEmpty(policies)}"
+              th:action="@{/claims/new}" method="post"
+              th:object="${claimRequest}" data-validate enctype="multipart/form-data">
+          <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+
+          <div class="form-group">
+            <label for="policyId" class="form-label">Insurance Policy *</label>
+            <select id="policyId" th:field="*{policyId}" class="form-select" required
+                    th:classappend="${#fields.hasErrors('policyId')} ? 'is-invalid'">
+              <option value="">— Select a policy —</option>
+              <option th:each="p : ${policies}"
+                      th:value="${p.id}"
+                      th:text="${p.policyNumber + ' | ' + p.policyType.name() + ' | Coverage: ₹' + #numbers.formatDecimal(p.availableCoverage,0,'COMMA',2,'POINT') + ' available'}">
+              </option>
+            </select>
+            <div class="invalid-feedback" th:if="${#fields.hasErrors('policyId')}"
+                 th:errors="*{policyId}"></div>
+          </div>
+
+          <div class="form-row" style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;">
+            <div class="form-group">
+              <label for="claimType" class="form-label">Claim Type *</label>
+              <select id="claimType" th:field="*{claimType}" class="form-select" required
+                      th:classappend="${#fields.hasErrors('claimType')} ? 'is-invalid'">
+                <option value="">— Select type —</option>
+                <option th:each="ct : ${claimTypes}" th:value="${ct.name()}"
+                        th:text="${ct.name().replace('_',' ')}"></option>
+              </select>
+              <div class="invalid-feedback" th:if="${#fields.hasErrors('claimType')}"
+                   th:errors="*{claimType}"></div>
+            </div>
+            <div class="form-group">
+              <label for="claimedAmount" class="form-label">Claimed Amount (₹) *</label>
+              <input type="number" id="claimedAmount" th:field="*{claimedAmount}"
+                     class="form-control" step="0.01" min="0.01" required placeholder="0.00"
+                     th:classappend="${#fields.hasErrors('claimedAmount')} ? 'is-invalid'"/>
+              <div class="invalid-feedback" th:if="${#fields.hasErrors('claimedAmount')}"
+                   th:errors="*{claimedAmount}"></div>
+            </div>
+          </div>
+
+          <div class="form-row" style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;">
+            <div class="form-group">
+              <label for="hospitalName" class="form-label">Hospital / Provider *</label>
+              <input type="text" id="hospitalName" th:field="*{hospitalName}"
+                     class="form-control" placeholder="Hospital or clinic name" required
+                     th:classappend="${#fields.hasErrors('hospitalName')} ? 'is-invalid'"/>
+              <div class="invalid-feedback" th:if="${#fields.hasErrors('hospitalName')}"
+                   th:errors="*{hospitalName}"></div>
+            </div>
+            <div class="form-group">
+              <label for="doctorName" class="form-label">Doctor / Physician *</label>
+              <input type="text" id="doctorName" th:field="*{doctorName}"
+                     class="form-control" placeholder="Attending physician" required
+                     th:classappend="${#fields.hasErrors('doctorName')} ? 'is-invalid'"/>
+              <div class="invalid-feedback" th:if="${#fields.hasErrors('doctorName')}"
+                   th:errors="*{doctorName}"></div>
+            </div>
+          </div>
+
+          <div class="form-row" style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;">
+            <div class="form-group">
+              <label for="treatmentStartDate" class="form-label">Treatment Start Date *</label>
+              <input type="date" id="treatmentStartDate" th:field="*{treatmentStartDate}"
+                     class="form-control" required
+                     th:classappend="${#fields.hasErrors('treatmentStartDate')} ? 'is-invalid'"/>
+              <div class="invalid-feedback" th:if="${#fields.hasErrors('treatmentStartDate')}"
+                   th:errors="*{treatmentStartDate}"></div>
+            </div>
+            <div class="form-group">
+              <label for="treatmentEndDate" class="form-label">Treatment End Date</label>
+              <input type="date" id="treatmentEndDate" th:field="*{treatmentEndDate}"
+                     class="form-control"/>
+              <div class="form-hint">Leave blank if treatment is ongoing</div>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="description" class="form-label">Description *</label>
+            <textarea id="description" th:field="*{description}" class="form-control form-textarea"
+                      rows="4" placeholder="Describe the medical condition, treatment received, and reason for claim (minimum 20 characters)"
+                      required style="resize:vertical;"
+                      th:classappend="${#fields.hasErrors('description')} ? 'is-invalid'"></textarea>
+            <div class="invalid-feedback" th:if="${#fields.hasErrors('description')}"
+                 th:errors="*{description}"></div>
+          </div>
+
+          <div class="form-group">
+            <label for="additionalNotes" class="form-label">Additional Notes</label>
+            <textarea id="additionalNotes" th:field="*{additionalNotes}" class="form-control form-textarea"
+                      rows="2" placeholder="Any other relevant information" style="resize:vertical;"></textarea>
+          </div>
+
+          <div style="background:var(--neutral-50);border:1px solid var(--neutral-200);border-radius:0.5rem;padding:1rem;margin-bottom:1.25rem;">
+            <p style="font-size:0.875rem;font-weight:600;color:var(--neutral-700);margin-bottom:0.5rem;">
+              <i class="fas fa-info-circle text-primary me-2"></i>Submission Options
+            </p>
+            <label style="display:flex;align-items:center;gap:0.5rem;font-size:0.875rem;cursor:pointer;">
+              <input type="checkbox" th:field="*{submitNow}" style="width:16px;height:16px;"/>
+              <span>Submit immediately for validation and review (uncheck to save as draft)</span>
+            </label>
+          </div>
+
+          <div class="d-flex gap-2">
+            <button type="submit" class="btn btn-primary" id="submit-claim-btn">
+              <i class="fas fa-paper-plane"></i> Submit Claim
+            </button>
+            <a th:href="@{/claims}" class="btn btn-outline-secondary">Cancel</a>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

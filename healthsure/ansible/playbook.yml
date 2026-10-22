@@ -1,0 +1,114 @@
+---
+# HealthSure Deployment & Orchestration Playbook
+# Targets clean Ubuntu Server (22.04 LTS or 24.04 LTS)
+- name: Deploy HealthSure Dockerized Claim Workflow Stack
+  hosts: webservers
+  become: yes
+  vars_files:
+    - group_vars/all.yml
+
+  tasks:
+    - name: 1. Update APT repository cache
+      apt:
+        update_cache: yes
+        cache_valid_time: 3600
+
+    - name: 2. Install prerequisite packages
+      apt:
+        name:
+          - apt-transport-https
+          - ca-certificates
+          - curl
+          - gnupg
+          - lsb-release
+          - python3-pip
+          - git
+        state: present
+
+    - name: 3. Add Docker GPG apt Key
+      apt_key:
+        url: https://download.docker.com/linux/ubuntu/gpg
+        state: present
+
+    - name: 4. Add Docker APT repository
+      apt_repository:
+        repo: "deb [arch=amd64] https://download.docker.com/linux/ubuntu {{ ansible_distribution_release }} stable"
+        state: present
+
+    - name: 5. Install Docker Engine and Docker Compose Plugin
+      apt:
+        name:
+          - docker-ce
+          - docker-ce-cli
+          - containerd.io
+          - docker-compose-plugin
+        state: present
+
+    - name: 6. Ensure Docker service is running and enabled
+      systemd:
+        name: docker
+        state: started
+        enabled: yes
+
+    - name: 7. Create application and persistent upload directories
+      file:
+        path: "{{ item }}"
+        state: directory
+        owner: ubuntu
+        group: docker
+        mode: '0775'
+      loop:
+        - "{{ deploy_directory }}"
+        - "{{ uploads_directory }}"
+
+    - name: 8. Transfer docker-compose.yml configuration
+      template:
+        src: ../docker-compose.yml
+        dest: "{{ deploy_directory }}/docker-compose.yml"
+        owner: ubuntu
+        group: docker
+        mode: '0644'
+
+    - name: 9. Record currently active image version for rollback safety
+      shell: "docker inspect --format '{{ '{{' }} .Id {{ '}}' }}' healthsure-app || echo 'none'"
+      register: current_app_image_id
+      ignore_errors: yes
+      changed_when: false
+
+    - name: 10. Start or update HealthSure container stack via Docker Compose
+      community.docker.docker_compose_v2:
+        project_src: "{{ deploy_directory }}"
+        state: present
+      register: compose_output
+
+    - name: 11. Verify deployment health endpoint
+      uri:
+        url: "{{ health_endpoint }}"
+        method: GET
+        status_code: 200
+      register: health_check
+      until: health_check.status == 200
+      retries: "{{ health_check_retries }}"
+      delay: "{{ health_check_delay }}"
+      ignore_errors: yes
+
+    - name: 12. Automated Rollback on deployment or health verification failure
+      block:
+        - name: Rollback condition check
+          fail:
+            msg: "Health check failed! Initiating rollback to previous container state."
+          when: health_check.status != 200
+
+      rescue:
+        - name: Log rollback event
+          debug:
+            msg: "CRITICAL: Rolling back HealthSure to previous image: {{ current_app_image_id.stdout }}"
+
+        - name: Restart previous containers
+          shell: "docker compose restart"
+          args:
+            chdir: "{{ deploy_directory }}"
+
+        - name: Fail playbook execution with diagnostic message
+          fail:
+            msg: "Deployment failed health checks. Rollback completed. Check logs using: docker logs healthsure-app"

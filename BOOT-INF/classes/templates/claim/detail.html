@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security"
+      th:replace="~{fragments/layout :: layout('Claim Details', ~{::content})}">
+<body>
+<div th:fragment="content">
+  <div style="display:grid;grid-template-columns:2fr 1fr;gap:1.5rem;align-items:start;">
+
+    <!-- Left Column: Claim Details + Documents -->
+    <div>
+      <!-- Claim Header Card -->
+      <div class="card mb-4">
+        <div class="card-header">
+          <div>
+            <h2 class="card-title" th:text="${claim.claimReference}">CLM-XXXX</h2>
+            <p style="margin:0;font-size:0.813rem;color:var(--neutral-500);"
+               th:text="${'Submitted by ' + claim.submittedBy.fullName + ' on ' + (claim.submittedAt != null ? #temporals.format(claim.submittedAt,'dd MMM yyyy HH:mm') : 'Not submitted')}">
+            </p>
+          </div>
+          <span th:class="${'badge badge-' + claim.status.name().toLowerCase().replace('_','-')}"
+                style="font-size:0.875rem;padding:0.375rem 0.875rem;"
+                th:text="${claim.status.name().replace('_',' ')}">STATUS</span>
+        </div>
+        <div class="card-body">
+          <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:1.5rem;margin-bottom:1.5rem;">
+            <div>
+              <div style="font-size:0.75rem;text-transform:uppercase;letter-spacing:0.08em;color:var(--neutral-400);font-weight:600;margin-bottom:0.25rem;">Policy</div>
+              <div style="font-weight:600;" th:text="${claim.policy.policyNumber}"></div>
+              <div style="font-size:0.8rem;color:var(--neutral-500);" th:text="${claim.policy.policyType.name()}"></div>
+            </div>
+            <div>
+              <div style="font-size:0.75rem;text-transform:uppercase;letter-spacing:0.08em;color:var(--neutral-400);font-weight:600;margin-bottom:0.25rem;">Claim Type</div>
+              <div style="font-weight:600;" th:text="${claim.claimType.name().replace('_',' ')}"></div>
+            </div>
+            <div>
+              <div style="font-size:0.75rem;text-transform:uppercase;letter-spacing:0.08em;color:var(--neutral-400);font-weight:600;margin-bottom:0.25rem;">Claimed Amount</div>
+              <div style="font-size:1.25rem;font-weight:700;color:var(--primary);">
+                ₹<span th:text="${#numbers.formatDecimal(claim.claimedAmount,0,'COMMA',2,'POINT')}"></span>
+              </div>
+              <div th:if="${claim.approvedAmount != null}"
+                   style="font-size:0.8rem;color:var(--success);">
+                Approved: ₹<span th:text="${#numbers.formatDecimal(claim.approvedAmount,0,'COMMA',2,'POINT')}"></span>
+              </div>
+            </div>
+            <div>
+              <div style="font-size:0.75rem;text-transform:uppercase;letter-spacing:0.08em;color:var(--neutral-400);font-weight:600;margin-bottom:0.25rem;">Hospital</div>
+              <div style="font-weight:500;" th:text="${claim.hospitalName}"></div>
+            </div>
+            <div>
+              <div style="font-size:0.75rem;text-transform:uppercase;letter-spacing:0.08em;color:var(--neutral-400);font-weight:600;margin-bottom:0.25rem;">Doctor</div>
+              <div style="font-weight:500;" th:text="${claim.doctorName}"></div>
+            </div>
+            <div>
+              <div style="font-size:0.75rem;text-transform:uppercase;letter-spacing:0.08em;color:var(--neutral-400);font-weight:600;margin-bottom:0.25rem;">Treatment Dates</div>
+              <div style="font-size:0.875rem;">
+                <span th:text="${#temporals.format(claim.treatmentStartDate,'dd MMM yyyy')}"></span>
+                <span th:if="${claim.treatmentEndDate != null}">
+                  → <span th:text="${#temporals.format(claim.treatmentEndDate,'dd MMM yyyy')}"></span>
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <div style="margin-bottom:1.25rem;">
+            <div style="font-size:0.75rem;text-transform:uppercase;letter-spacing:0.08em;color:var(--neutral-400);font-weight:600;margin-bottom:0.5rem;">Description</div>
+            <p style="color:var(--neutral-700);font-size:0.875rem;line-height:1.7;margin:0;" th:text="${claim.description}"></p>
+          </div>
+
+          <div th:if="${claim.additionalNotes != null}" style="margin-bottom:1.25rem;">
+            <div style="font-size:0.75rem;text-transform:uppercase;letter-spacing:0.08em;color:var(--neutral-400);font-weight:600;margin-bottom:0.5rem;">Additional Notes</div>
+            <p style="color:var(--neutral-600);font-size:0.875rem;line-height:1.7;margin:0;" th:text="${claim.additionalNotes}"></p>
+          </div>
+
+          <!-- Rejection Reason -->
+          <div th:if="${claim.rejectionReason != null}"
+               class="alert alert-danger" style="margin-bottom:0;">
+            <div><strong>Rejection Reason:</strong></div>
+            <div th:text="${claim.rejectionReason}"></div>
+          </div>
+
+          <!-- Reviewer notes -->
+          <div th:if="${claim.reviewerNotes != null}"
+               class="alert alert-info" style="margin-bottom:0;">
+            <div><strong>Reviewer Notes:</strong></div>
+            <div th:text="${claim.reviewerNotes}"></div>
+          </div>
+
+          <!-- Additional info request -->
+          <div th:if="${claim.additionalInfoRequest != null}"
+               class="alert alert-warning" style="margin-bottom:0;">
+            <i class="fas fa-question-circle"></i>
+            <div>
+              <strong>Additional Information Requested:</strong>
+              <p style="margin:0.25rem 0 0;" th:text="${claim.additionalInfoRequest}"></p>
+            </div>
+          </div>
+
+          <!-- Actions -->
+          <div class="d-flex gap-2" style="margin-top:1.25rem;"
+               th:if="${isOwner and (claim.status.name() == 'DRAFT' or claim.status.name() == 'VALIDATION_FAILED' or claim.status.name() == 'ADDITIONAL_INFO_REQUIRED')}">
+            <form th:action="@{/claims/{id}/submit(id=${claim.id})}" method="post" style="margin:0;">
+              <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+              <button type="submit" class="btn btn-primary"
+                      data-confirm="Submit this claim for review?">
+                <i class="fas fa-paper-plane"></i> Submit for Review
+              </button>
+            </form>
+            <a th:href="@{/claims}" class="btn btn-outline-secondary">← Back</a>
+          </div>
+
+          <!-- Reviewer link -->
+          <div style="margin-top:1.25rem;" th:if="${isReviewerOrAdmin and claim.status.name() == 'UNDER_REVIEW'}">
+            <a th:href="@{/reviewer/claims/{id}(id=${claim.id})}" class="btn btn-primary">
+              <i class="fas fa-gavel"></i> Review This Claim
+            </a>
+          </div>
+        </div>
+      </div>
+
+      <!-- Documents Card -->
+      <div class="card">
+        <div class="card-header">
+          <h3 class="card-title"><i class="fas fa-paperclip me-2"></i>Supporting Documents</h3>
+          <span style="font-size:0.813rem;color:var(--neutral-500);"
+                th:text="${documents.size() + ' document(s)'}"></span>
+        </div>
+        <div class="card-body">
+          <!-- Upload form -->
+          <div th:if="${isOwner or isReviewerOrAdmin}"
+               style="margin-bottom:1.5rem;padding:1rem;background:var(--neutral-50);border-radius:0.5rem;border:1px dashed var(--neutral-300);">
+            <form th:action="@{/documents/upload/{id}(id=${claim.id})}"
+                  method="post" enctype="multipart/form-data">
+              <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+              <div class="form-group">
+                <label for="file" class="form-label">Upload Document</label>
+                <input type="file" id="file" name="file" class="form-control"
+                       accept=".pdf,.jpg,.jpeg,.png,.doc,.docx" required/>
+                <div class="form-hint">Allowed: PDF, JPG, PNG, DOC, DOCX – Max 10 MB</div>
+              </div>
+              <div class="form-group">
+                <input type="text" name="description" class="form-control"
+                       placeholder="Document description (optional)"/>
+              </div>
+              <button type="submit" class="btn btn-primary btn-sm">
+                <i class="fas fa-upload"></i> Upload
+              </button>
+            </form>
+          </div>
+
+          <!-- Document list -->
+          <div th:if="${#lists.isEmpty(documents)}" class="empty-state" style="padding:1.5rem;">
+            <div class="empty-icon"><i class="fas fa-file-upload"></i></div>
+            <h3>No documents uploaded</h3>
+            <p>Attach supporting documents to help expedite review.</p>
+          </div>
+
+          <div th:each="doc : ${documents}"
+               style="display:flex;align-items:center;gap:1rem;padding:0.75rem;border-bottom:1px solid var(--neutral-100);">
+            <div style="width:36px;height:36px;background:var(--primary-light);border-radius:0.5rem;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+              <i class="fas fa-file-alt" style="color:var(--primary);"></i>
+            </div>
+            <div style="flex:1;min-width:0;">
+              <div style="font-weight:500;font-size:0.875rem;truncate:ellipsis;" th:text="${doc.originalFilename}"></div>
+              <div style="font-size:0.75rem;color:var(--neutral-400);">
+                <span th:text="${doc.contentType}"></span> •
+                <span th:text="${#numbers.formatDecimal(doc.fileSize / 1024.0, 0, 'COMMA', 1, 'POINT') + ' KB'}"></span> •
+                <span th:text="${doc.description ?: ''}"></span>
+              </div>
+            </div>
+            <div class="d-flex gap-2">
+              <a th:href="@{/documents/download/{docId}/claim/{claimId}(docId=${doc.id},claimId=${claim.id})}"
+                 class="btn btn-outline-secondary btn-sm" target="_blank">
+                <i class="fas fa-download"></i>
+              </a>
+              <form th:if="${isOwner or isReviewerOrAdmin}"
+                    th:action="@{/documents/delete/{docId}/claim/{claimId}(docId=${doc.id},claimId=${claim.id})}"
+                    method="post" style="margin:0;">
+                <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+                <button type="submit" class="btn btn-outline-secondary btn-sm"
+                        data-confirm="Delete this document?"
+                        style="color:var(--danger);border-color:var(--danger);">
+                  <i class="fas fa-trash"></i>
+                </button>
+              </form>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right Column: Audit Timeline -->
+    <div>
+      <div class="card">
+        <div class="card-header">
+          <h3 class="card-title"><i class="fas fa-history me-2"></i>Claim Timeline</h3>
+        </div>
+        <div class="card-body">
+          <div class="timeline" th:if="${!#lists.isEmpty(auditEvents)}">
+            <div class="timeline-item" th:each="event : ${auditEvents}">
+              <div th:class="${'timeline-dot ' +
+                (event.eventType.name() == 'CLAIM_APPROVED' ? 'green' :
+                (event.eventType.name() == 'CLAIM_REJECTED' ? 'red' :
+                (event.eventType.name() == 'VALIDATION_FAILED' ? 'yellow' :
+                (event.eventType.name() == 'CLAIM_CREATED' ? 'gray' : ''))))
+              }"></div>
+              <div class="timeline-time"
+                   th:text="${#temporals.format(event.createdAt, 'dd MMM yyyy HH:mm')}"></div>
+              <div class="timeline-event"
+                   th:text="${event.eventType.name().replace('_',' ')}"></div>
+              <div class="timeline-desc" th:text="${event.description}"></div>
+              <div style="font-size:0.75rem;color:var(--neutral-400);margin-top:0.125rem;"
+                   th:text="${'By: ' + event.actorUsername}"></div>
+            </div>
+          </div>
+          <div th:if="${#lists.isEmpty(auditEvents)}" class="empty-state" style="padding:1rem;">
+            <p>No history yet.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

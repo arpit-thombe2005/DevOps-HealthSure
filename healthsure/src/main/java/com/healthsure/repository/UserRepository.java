@@ -32,8 +32,8 @@ extends JpaRepository<User, Long> {
     public boolean existsByEmail(String var1);
 
     @Query(value="SELECT u FROM User u JOIN u.roles r WHERE r = :role")
-    public List<User> findByRole(String var1);
+    public List<User> findByRole(@Param("role") String role);
 
-    @Query(value="SELECT u FROM User u WHERE u.enabled = true AND u.firstName LIKE %:name% OR u.lastName LIKE %:name%")
-    public List<User> searchByName(String var1);
+    @Query(value="SELECT u FROM User u WHERE u.enabled = true AND (u.firstName LIKE %:name% OR u.lastName LIKE %:name%)")
+    public List<User> searchByName(@Param("name") String name);
 }

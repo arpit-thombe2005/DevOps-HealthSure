@@ -24,23 +24,11 @@ pipeline {
     }
 
     stages {
-        // Stage 1: SCM Checkout
+        // Stage 1: Checkout SCM
         stage('1. Checkout SCM') {
             steps {
                 echo "=== Stage 1: Checking out source code ==="
-                script {
-                    try {
-                        checkout scm
-                    } catch (Exception ignored) {
-                        echo "Using workspace repository"
-                    }
-                    if (isUnix()) {
-                        env.GIT_COMMIT_SHORT = sh(script: 'git rev-parse --short HEAD 2>/dev/null || echo "local"', returnStdout: true).trim()
-                    } else {
-                        env.GIT_COMMIT_SHORT = bat(script: '@git rev-parse --short HEAD 2>nul || @echo local', returnStdout: true).trim()
-                    }
-                    echo "Checking out commit: ${env.GIT_COMMIT_SHORT}"
-                }
+                echo "Workspace ready: c:/Users/arpit/Desktop/College/DevOps/healthsure"
             }
         }
 

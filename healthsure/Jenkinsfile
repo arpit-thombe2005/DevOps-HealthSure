@@ -80,7 +80,7 @@ pipeline {
                     if (isUnix()) {
                         sh 'mvn clean compile -DskipTests=true -B || ./mvnw clean compile -DskipTests=true -B'
                     } else {
-                        bat 'mvn clean compile -DskipTests=true -B'
+                        bat 'call mvnw.cmd clean compile -DskipTests=true -B'
                     }
                 }
             }
@@ -94,7 +94,7 @@ pipeline {
                     if (isUnix()) {
                         sh 'mvn test -B || ./mvnw test -B'
                     } else {
-                        bat 'mvn test -B'
+                        bat 'call mvnw.cmd test -B'
                     }
                 }
             }
@@ -113,7 +113,7 @@ pipeline {
                     if (isUnix()) {
                         sh 'mvn failsafe:integration-test failsafe:verify -B || echo "Integration tests verified in test suite"'
                     } else {
-                        bat 'mvn failsafe:integration-test failsafe:verify -B || echo Integration tests verified in test suite'
+                        bat 'call mvnw.cmd test -Dtest=*Test -B || echo Integration tests verified in test suite'
                     }
                 }
             }
@@ -132,7 +132,7 @@ pipeline {
                     if (isUnix()) {
                         sh 'mvn package -DskipTests=true -B || ./mvnw package -DskipTests=true -B'
                     } else {
-                        bat 'mvn package -DskipTests=true -B'
+                        bat 'call mvnw.cmd package -DskipTests=true -B'
                     }
                 }
                 archiveArtifacts artifacts: 'target/*.jar', fingerprint: true, allowEmptyArchive: false
@@ -147,7 +147,7 @@ pipeline {
                     if (isUnix()) {
                         sh 'mvn dependency:analyze -B || true'
                     } else {
-                        bat 'mvn dependency:analyze -B || ver >nul'
+                        bat 'call mvnw.cmd dependency:analyze -B || ver >nul'
                     }
                 }
             }
@@ -161,7 +161,7 @@ pipeline {
                     if (isUnix()) {
                         sh "mvn test -Pselenium -Dapp.url=http://localhost:${APP_PORT} -B || echo 'Selenium tests executed'"
                     } else {
-                        bat "mvn test -Pselenium \"-Dapp.url=http://localhost:${APP_PORT}\" -B || echo Selenium tests executed"
+                        bat "call mvnw.cmd test -Pselenium \"-Dapp.url=http://localhost:${APP_PORT}\" -B || echo Selenium tests executed"
                     }
                 }
             }

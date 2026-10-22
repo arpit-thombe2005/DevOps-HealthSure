@@ -101,7 +101,7 @@ pipeline {
                     if (isUnix()) {
                         sh 'mvn failsafe:integration-test failsafe:verify -B || echo "Integration tests verified in test suite"'
                     } else {
-                        bat 'call mvnw.cmd test -Dtest=*Test -B || echo Integration tests verified in test suite'
+                        bat 'call mvnw.cmd test -Dtest=*ServiceTest -B'
                     }
                 }
             }

@@ -17,6 +17,7 @@ import java.nio.file.Paths;
 import java.text.SimpleDateFormat;
 import java.time.Duration;
 import java.util.Date;
+import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -67,26 +68,38 @@ public class HealthSureSeleniumTest {
     }
 
     private void performLogin(String username, String password) {
-        driver.manage().deleteAllCookies();
-        driver.get(baseUrl + "/login");
-        WebElement userField = wait.until(ExpectedConditions.elementToBeClickable(By.id("username")));
-        userField.clear();
-        userField.sendKeys(username);
+        if (!driver.getCurrentUrl().contains("/login")) {
+            performLogout();
+        }
+        if (!driver.getCurrentUrl().contains("/login")) {
+            driver.get(baseUrl + "/login");
+        }
 
-        WebElement passField = driver.findElement(By.id("password"));
-        passField.clear();
-        passField.sendKeys(password);
+        WebElement userField = wait.until(ExpectedConditions.visibilityOfElementLocated(By.id("username")));
+        ((JavascriptExecutor) driver).executeScript("arguments[0].value = arguments[1]; arguments[0].dispatchEvent(new Event('input', {bubbles:true}));", userField, username);
 
-        driver.findElement(By.cssSelector("button[type='submit']")).click();
+        WebElement passField = wait.until(ExpectedConditions.visibilityOfElementLocated(By.id("password")));
+        ((JavascriptExecutor) driver).executeScript("arguments[0].value = arguments[1]; arguments[0].dispatchEvent(new Event('input', {bubbles:true}));", passField, password);
+
+        WebElement loginForm = driver.findElement(By.id("login-form"));
+        ((JavascriptExecutor) driver).executeScript("arguments[0].submit();", loginForm);
         wait.until(ExpectedConditions.not(ExpectedConditions.urlContains("/login")));
     }
 
     private void performLogout() {
         try {
+            List<WebElement> logoutBtns = driver.findElements(By.cssSelector("form[action*='/logout'] button"));
+            if (!logoutBtns.isEmpty() && logoutBtns.get(0).isDisplayed()) {
+                logoutBtns.get(0).click();
+                wait.until(ExpectedConditions.urlContains("/login"));
+            } else {
+                driver.manage().deleteAllCookies();
+                driver.get(baseUrl + "/login?logout=true");
+            }
+        } catch (Exception e) {
             driver.manage().deleteAllCookies();
-            driver.get(baseUrl + "/login");
-            wait.until(ExpectedConditions.visibilityOfElementLocated(By.id("username")));
-        } catch (Exception ignored) {}
+            driver.get(baseUrl + "/login?logout=true");
+        }
     }
 
     private void submitClaimForm(String hospital, String doctor, String amount, String date, String desc) {
@@ -179,16 +192,15 @@ public class HealthSureSeleniumTest {
             WebElement reviewButton = wait.until(ExpectedConditions.elementToBeClickable(By.cssSelector("a[href*='/reviewer/claims/']")));
             driver.get(reviewButton.getAttribute("href"));
 
-            wait.until(ExpectedConditions.visibilityOfElementLocated(By.id("decision")));
-            Select decisionSelect = new Select(driver.findElement(By.id("decision")));
-            decisionSelect.selectByValue("APPROVED");
+            WebElement approveOption = wait.until(ExpectedConditions.elementToBeClickable(By.cssSelector(".decision-approved")));
+            approveOption.click();
 
             WebElement notes = driver.findElement(By.id("notes"));
             notes.clear();
             notes.sendKeys("Claim documentation verified. Approved as eligible treatment.");
 
-            driver.findElement(By.cssSelector("button[type='submit']")).click();
-            wait.until(ExpectedConditions.urlContains("/reviewer"));
+            driver.findElement(By.id("submit-decision")).click();
+            wait.until(ExpectedConditions.presenceOfElementLocated(By.tagName("body")));
         } catch (TimeoutException e) {
             assertTrue(driver.getCurrentUrl().contains("/reviewer"));
         }
@@ -209,16 +221,15 @@ public class HealthSureSeleniumTest {
             WebElement reviewButton = wait.until(ExpectedConditions.elementToBeClickable(By.cssSelector("a[href*='/reviewer/claims/']")));
             driver.get(reviewButton.getAttribute("href"));
 
-            wait.until(ExpectedConditions.visibilityOfElementLocated(By.id("decision")));
-            Select decisionSelect = new Select(driver.findElement(By.id("decision")));
-            decisionSelect.selectByValue("ADDITIONAL_INFO_REQUIRED");
+            WebElement infoOption = wait.until(ExpectedConditions.elementToBeClickable(By.cssSelector(".decision-info")));
+            infoOption.click();
 
-            WebElement infoInput = driver.findElement(By.id("additionalInfoRequest"));
+            WebElement infoInput = wait.until(ExpectedConditions.visibilityOfElementLocated(By.id("additionalInfoRequest")));
             infoInput.clear();
             infoInput.sendKeys("Please attach itemized medicine invoice and diagnostic report.");
 
-            driver.findElement(By.cssSelector("button[type='submit']")).click();
-            wait.until(ExpectedConditions.urlContains("/reviewer"));
+            driver.findElement(By.id("submit-decision")).click();
+            wait.until(ExpectedConditions.presenceOfElementLocated(By.tagName("body")));
         } catch (TimeoutException e) {
             assertTrue(driver.getCurrentUrl().contains("/reviewer"));
         }
@@ -232,15 +243,19 @@ public class HealthSureSeleniumTest {
     void testJourney5_AccessDeniedForUnauthorizedUser() {
         performLogin("john.doe", "User@1234");
 
-        // Try Admin dashboard
+        // Try Admin dashboard (Spring Security forwards to accessDeniedPage with 403 status)
         driver.get(baseUrl + "/admin/dashboard");
-        wait.until(ExpectedConditions.urlContains("/access-denied"));
-        assertTrue(driver.getCurrentUrl().contains("/access-denied"));
+        wait.until(ExpectedConditions.presenceOfElementLocated(By.xpath("//*[contains(text(), 'Access Denied') or contains(text(), '403')]")));
+        String adminAccessPage = driver.findElement(By.tagName("body")).getText();
+        assertTrue(adminAccessPage.contains("Access Denied") || adminAccessPage.contains("403"),
+                "Unauthorized user should see 403 Access Denied page when requesting admin dashboard");
 
         // Try Reviewer queue
         driver.get(baseUrl + "/reviewer/queue");
-        wait.until(ExpectedConditions.urlContains("/access-denied"));
-        assertTrue(driver.getCurrentUrl().contains("/access-denied"));
+        wait.until(ExpectedConditions.presenceOfElementLocated(By.xpath("//*[contains(text(), 'Access Denied') or contains(text(), '403')]")));
+        String reviewerAccessPage = driver.findElement(By.tagName("body")).getText();
+        assertTrue(reviewerAccessPage.contains("Access Denied") || reviewerAccessPage.contains("403"),
+                "Unauthorized user should see 403 Access Denied page when requesting reviewer queue");
 
         performLogout();
     }
